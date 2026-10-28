@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>杉山組 勤怠</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#EEF1F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161B22" media="(prefers-color-scheme: dark)">
+<style>
+  :root { --bg: #EEF1F4; --ink: #1E2A3A; --muted: #66717F; --shu: #C2342B; color-scheme: light; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161B22; --ink: #E6EAF0; --muted: #97A2B0; --shu: #E2574D; color-scheme: dark; }
+  }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body {
+    box-sizing: border-box;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+             env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+    font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; color: var(--ink);
+  }
+  iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+  /* 起動中の画面 */
+  #splash {
+    position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 18px;
+    background: var(--bg); transition: opacity .25s;
+  }
+  #splash.done { opacity: 0; pointer-events: none; }
+  #splash img { width: 120px; height: 120px; border-radius: 28px; }
+  #splash p { margin: 0; color: var(--muted); font-size: 14px; }
+  .spin { width: 28px; height: 28px; border-radius: 50%; border: 3px solid rgba(128,128,128,.3);
+          border-top-color: var(--shu); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #msg { max-width: 300px; text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div id="splash">
+  <img src="icon-192.png" alt="">
+  <div class="spin" id="spin"></div>
+  <p id="msg">読み込み中…</p>
+</div>
+
+<script>
+  /* ★ここに GAS の Webアプリの URL（末尾が /exec）を貼り付けてください */
+  const GAS_URL = 'ここにURLを貼り付け';
+
+  const splash = document.getElementById('splash');
+  function showMessage(text) {
+    document.getElementById('spin').style.display = 'none';
+    document.getElementById('msg').textContent = text;
+    splash.classList.remove('done');
+  }
+
+  if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(GAS_URL)) {
+    showMessage('設定エラー：index.html の GAS_URL に /exec のURLを入れてください');
+  } else if (!navigator.onLine) {
+    showMessage('インターネットに接続されていません。電波の良い場所で開き直してください');
+  } else {
+    const f = document.createElement('iframe');
+    f.src = GAS_URL;
+    f.title = '杉山組 勤怠';
+    f.allow = 'clipboard-write';
+    f.onload = () => splash.classList.add('done');
+    document.body.appendChild(f);
+    // 20秒たっても表示されなければ案内を出す
+    setTimeout(() => {
+      if (!splash.classList.contains('done')) document.getElementById('msg').textContent = '時間がかかっています。もう少しお待ちください…';
+    }, 20000);
+  }
+
+  // インストールアプリとして動かすための仕組み（サービスワーカー）
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
